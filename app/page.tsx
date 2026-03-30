@@ -1,66 +1,160 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
+
+import React from 'react';
+import Header from '@/components/Header';
+import PromptEditor from '@/components/PromptEditor';
+import HealthMetrics from '@/components/HealthMetrics';
+import SuggestionsPanel from '@/components/SuggestionsPanel';
+import AdvisoryPanel from '@/components/AdvisoryPanel';
+import VersionHistory from '@/components/VersionHistory';
+import ContextModal from '@/components/ContextModal';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { usePromptOptimizer } from '@/hooks/usePromptOptimizer';
 
 export default function Home() {
+  const {
+    promptText,
+    setPromptText,
+    versions,
+    currentVersion,
+    currentHealthMetrics,
+    overallScore,
+    isOptimizing,
+    isAnalyzingHealth,
+    isAnalyzingAdvisory,
+    suggestionsData,
+    suggestionsLoading,
+    suggestionsError,
+    advisoryData,
+    advisoryError,
+    showAdvisory,
+    showContextModal,
+    setShowContextModal,
+    showHealth,
+    isPlateauing,
+    editorHighlight,
+    optimizePrompt,
+    analyzePromptHealth,
+    analyzePromptAdvisory,
+    saveVersion,
+    loadVersion,
+    applyImprovedPrompt,
+    applyAndReOptimize,
+    applyAndRetest,
+    submitContext,
+  } = usePromptOptimizer();
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <>
+      <div className="container">
+        <Header
+          onSaveVersion={saveVersion}
+          onOptimize={optimizePrompt}
+          isOptimizing={isOptimizing}
         />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+        <div className="left-panel">
+          <div className="panel-header">
+            <div className="panel-title">Prompt Editor</div>
+            <button className="button button-secondary" onClick={saveVersion}>
+              Save Version
+            </button>
+          </div>
+          <div className="panel-content">
+            <PromptEditor
+              value={promptText}
+              onChange={setPromptText}
+              highlight={editorHighlight}
             />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+            <HealthMetrics
+              metrics={currentHealthMetrics}
+              overallScore={overallScore}
+              isLoading={isAnalyzingHealth}
+              isPlateauing={isPlateauing}
+              visible={showHealth}
+            />
+
+            <div
+              style={{
+                marginTop: '16px',
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '12px',
+              }}
+            >
+              <button
+                className="button button-secondary"
+                onClick={analyzePromptHealth}
+                disabled={isAnalyzingHealth}
+                id="analyzeButton"
+              >
+                {isAnalyzingHealth ? (
+                  <>
+                    <LoadingSpinner /> Analyzing...
+                  </>
+                ) : (
+                  '🔍 Analyze Health'
+                )}
+              </button>
+              <button
+                className="button button-primary"
+                onClick={analyzePromptAdvisory}
+                disabled={isAnalyzingAdvisory}
+                id="advisoryButtonMain"
+              >
+                {isAnalyzingAdvisory ? (
+                  <>
+                    <LoadingSpinner /> Analyzing...
+                  </>
+                ) : (
+                  '🎓 Get Advisory'
+                )}
+              </button>
+            </div>
+
+            <VersionHistory
+              versions={versions}
+              currentVersion={currentVersion}
+              onLoadVersion={loadVersion}
+            />
+          </div>
         </div>
-      </main>
-    </div>
+
+        <div className="right-panel">
+          <div className="panel-header">
+            <div className="panel-title">Analysis &amp; Recommendations</div>
+          </div>
+          <div className="panel-content">
+            <div id="suggestionsContainer">
+              <SuggestionsPanel
+                data={suggestionsData}
+                isLoading={suggestionsLoading}
+                error={suggestionsError}
+                hasHealthMetrics={currentHealthMetrics !== null}
+                onApply={applyImprovedPrompt}
+                onApplyAndReOptimize={applyAndReOptimize}
+                onApplyAndRetest={applyAndRetest}
+              />
+            </div>
+
+            <AdvisoryPanel
+              advisory={advisoryData}
+              isLoading={isAnalyzingAdvisory}
+              error={advisoryError}
+              visible={showAdvisory}
+              onRefresh={analyzePromptAdvisory}
+            />
+          </div>
+        </div>
+      </div>
+
+      <ContextModal
+        visible={showContextModal}
+        plateauScore={overallScore}
+        onClose={() => setShowContextModal(false)}
+        onSubmit={submitContext}
+      />
+    </>
   );
 }
